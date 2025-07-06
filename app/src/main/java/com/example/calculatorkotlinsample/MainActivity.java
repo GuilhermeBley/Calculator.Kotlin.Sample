@@ -1,6 +1,7 @@
 package com.example.calculatorkotlinsample;
 
 import android.os.Bundle;
+import android.os.Debug;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
     private String Display = "0";
     private double Number = 0;
+    private boolean IsPreviousAnOperator = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     addToDisplayAndShow(buttonNumber.getText().toString());
+                    IsPreviousAnOperator = false;
                 }
             });
         }
@@ -39,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 clearAndView();
+                IsPreviousAnOperator = true;
             }
         });
 
@@ -51,10 +55,23 @@ public class MainActivity extends AppCompatActivity {
             operatorButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    if (IsPreviousAnOperator) return;
+
                     addToDisplayAndShow(" " + operatorButton.getText() + " ");
+
+                    IsPreviousAnOperator = true;
                 }
             });
         }
+
+        findViewById(R.id.btnEquals).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                makeCalculationAndShow();
+
+                IsPreviousAnOperator = false;
+            }
+        });
     }
 
     private void clearAndView(){
@@ -64,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToDisplayAndShow(String other){
-        if (Display.equals("0")) {
+        if (Display.equals("0") || Display.equals("0.00")) {
             Display = other;
         }
         else {
@@ -76,48 +93,65 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void makeCalculationAndShow(){
+        try {
+            Double result = getCalculationByText(Display);
+            Display = ((Integer)result.intValue()).toString();
+            TextView txtView = findViewById(R.id.display);
+            txtView.setText(Display);
+        }
+        catch (Exception e){
+            Display = "Error";
+            TextView txtView = findViewById(R.id.display);
+            txtView.setText(Display);
+            Number = 0;
+        }
 
     }
 
     private double getCalculationByText(String text){
         String[] operations = text.split( " ");
         double builder = 0;
-        String nextOperator = "";
+        String previousOperator = "";
 
-        for (String operation : operations) {
-            switch (operation){
+        for (String operationOrNumber : operations) {
+            // TODO: change this by a list of +,-,/ and *, then check if is in the list
+            switch (operationOrNumber){
                 case "+":
-                    nextOperator = operation;
+                    previousOperator = operationOrNumber;
                     continue;
                 case "-":
-                    nextOperator = operation;
+                    previousOperator = operationOrNumber;
                     continue;
                 case "/":
-                    nextOperator = operation;
+                    previousOperator = operationOrNumber;
                     continue;
                 case "*":
-                    nextOperator = operation;
+                    previousOperator = operationOrNumber;
                     continue;
                 default:
                     break;
             }
-            double parsedNumber = ;
-            switch (nextOperator){
+
+            double parsedNumber = Double.parseDouble(operationOrNumber);
+            switch (previousOperator){
                 case "+":
-                    builder +=
+                    builder += parsedNumber;
                     continue;
                 case "-":
-                    nextOperator = operation;
+                    builder -= parsedNumber;
                     continue;
                 case "/":
-                    nextOperator = operation;
+                    if (parsedNumber == 0) continue; // TODO: Add error message
+                    builder = builder / parsedNumber;
                     continue;
                 case "*":
-                    nextOperator = operation;
+                    builder *= parsedNumber;
                     continue;
                 default:
                     break;
             }
+            previousOperator = "";
+            builder = parsedNumber;
         }
 
         return builder;
